@@ -2,6 +2,7 @@
 
 
 """Python Implementation of 2048"""
+__author__ = "Bret Davis"
 
 import sys
 import pygame
