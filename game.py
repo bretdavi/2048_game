@@ -79,25 +79,6 @@ class Tile(object):
 
 class Board(object):
 
-    """TODO: Board on screen is a transposed version of board data
-    structure. Need to sort that out....yay
-     
-    e.g.
-    board data struct
-    ----------------
-    32  0  0  0 
-     8  0  0  0 
-     0  4 32  0 
-     0  0  4  0 
-
-    board on screen
-    ----------------
-    32  8  0  0
-     0  0  4  0
-     0  0 32  4
-     0  0  0  0
-     
-    """
     board_color = pygame.Color(173, 160, 133) 
     board_size = { 'w' : 400, 'h' : 400 }
     margins = {'w' : (SCREEN_SIZE['w'] - board_size['w']) / 2,
@@ -166,9 +147,6 @@ class Board(object):
         if not direction:
             return
 
-        """1. start with end of row/column in given direction and iterate
-           the opposite direction"""
-
         if direction == K_LEFT:
             for row_i in range(0, self.num_tiles, 1):
                 # optimization: Keep track of last tile, don't need to search before that point
@@ -200,22 +178,28 @@ class Board(object):
         elif direction == K_UP:
             for col_i in range(0, self.num_tiles, 1):
                 for row_i in range(0, self.num_tiles, 1):
-                    pass
+                    if self._board[row_i][col_i].val:
+                        continue
+                    for pos in range(row_i+1,self.num_tiles,1):
+                        if self._board[pos][col_i].val:
+                            tmp_tile = self._board[pos][col_i]
+                            self._board[pos][col_i] = self._board[row_i][col_i]
+                            self._board[row_i][col_i] = tmp_tile
+                            break
 
         # Go column by column, and for each column start from the bottom
         elif direction == K_DOWN:
             for col_i in range(0, self.num_tiles, 1):
                 for row_i in range(self.num_tiles-1, -1, -1):
-                    pass
+                    if self._board[row_i][col_i].val:
+                        continue
+                    for pos in range(row_i-1, -1, -1):
+                        if self._board[pos][col_i].val:
+                            tmp_tile = self._board[pos][col_i]
+                            self._board[pos][col_i] = self._board[row_i][col_i]
+                            self._board[row_i][col_i] = tmp_tile
+                            break
 
-        """1.1 Find first empty space in row/column and note it
-           EXCEPTION: If no empty spaces, than there is nothing to
-           do"""
-
-        """1.2 Find first non-empty space and move to noted empty space
-           EXCEPTION: If no non-empty spaces, than there is nothing to do"""
-
-        """REPEAT steps 1.1 and 1.2 until one of the exceptions noted is met"""
 
     def _merge_tiles(self, direction):
         assert(direction in (K_UP, K_DOWN, K_LEFT, K_RIGHT))
