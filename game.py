@@ -105,41 +105,6 @@ class Board(object):
 
         return pos_x, pos_y
 
-    def _board_iter(direction):
-        """Given a direction this will yield indices for the row and
-        column on each iteration that correspond to iterating in that
-        direction.
-
-        For example, if we are iterating from the left, for each row
-        iterate the row list from left to right."""
-
-        """Go row by row, and for each row iterate from the left side"""
-        print K_LEFT, K_RIGHT, K_DOWN, K_UP
-        if direction == K_LEFT:
-            for row_i in range(0, self.num_tiles, 1):
-                for col_i in range(0, self.num_tiles, 1):
-                    yield row_i, col_i
-
-        # Go row by row, and for each row iterate from the right side
-        elif direction == K_RIGHT:
-            for row_i in range(0, self.num_tiles, 1):
-                for col_i in range(self.num_tiles-1, -1, -1):
-                    yield row_i, col_i
-
-        # Go column by column, and for each column start from the top
-        elif direction == K_UP:
-            for col_i in range(0, self.num_tiles, 1):
-                for row_i in range(0, self.num_tiles, 1):
-                    yield row_i, col_i
-
-        # Go column by column, and for each column start from the bottom
-        elif direction == K_DOWN:
-            for col_i in range(0, self.num_tiles, 1):
-                for row_i in range(self.num_tiles-1, -1, -1):
-                    yield row_i, col_i
-
-
-
     def _shift_tiles(self, direction):
         """Given a specific direction, shift all the tiles in the data structure
         to that side of the board"""
@@ -153,6 +118,7 @@ class Board(object):
                 for col_i in range(0, self.num_tiles-1, 1):
                     if self._board[row_i][col_i].val:
                         continue
+
                     for pos in range(col_i+1,self.num_tiles,1):
                         if self._board[row_i][pos].val:
                             tmp_tile = self._board[row_i][pos]
@@ -167,6 +133,7 @@ class Board(object):
                 for col_i in range(self.num_tiles-1, 0, -1):
                     if self._board[row_i][col_i].val:
                         continue
+
                     for pos in range(col_i-1, -1, -1):
                         if self._board[row_i][pos].val:
                             tmp_tile = self._board[row_i][pos]
@@ -177,9 +144,10 @@ class Board(object):
         # Go column by column, and for each column start from the top
         elif direction == K_UP:
             for col_i in range(0, self.num_tiles, 1):
-                for row_i in range(0, self.num_tiles, 1):
+                for row_i in range(0, self.num_tiles-1, 1):
                     if self._board[row_i][col_i].val:
                         continue
+
                     for pos in range(row_i+1,self.num_tiles,1):
                         if self._board[pos][col_i].val:
                             tmp_tile = self._board[pos][col_i]
@@ -190,9 +158,10 @@ class Board(object):
         # Go column by column, and for each column start from the bottom
         elif direction == K_DOWN:
             for col_i in range(0, self.num_tiles, 1):
-                for row_i in range(self.num_tiles-1, -1, -1):
+                for row_i in range(self.num_tiles-1, 0, -1):
                     if self._board[row_i][col_i].val:
                         continue
+
                     for pos in range(row_i-1, -1, -1):
                         if self._board[pos][col_i].val:
                             tmp_tile = self._board[pos][col_i]
