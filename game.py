@@ -9,6 +9,7 @@ import pygame
 from pygame.locals import *
 import random
 import numpy as np
+import pprint
 
 
 SCREEN_SIZE = { 'w' : 640, 'h' : 480 }
@@ -78,6 +79,25 @@ class Tile(object):
 
 class Board(object):
 
+    """TODO: Board on screen is a transposed version of board data
+    structure. Need to sort that out....yay
+     
+    e.g.
+    board data struct
+    ----------------
+    32  0  0  0 
+     8  0  0  0 
+     0  4 32  0 
+     0  0  4  0 
+
+    board on screen
+    ----------------
+    32  8  0  0
+     0  0  4  0
+     0  0 32  4
+     0  0  0  0
+     
+    """
     board_color = pygame.Color(173, 160, 133) 
     board_size = { 'w' : 400, 'h' : 400 }
     margins = {'w' : (SCREEN_SIZE['w'] - board_size['w']) / 2,
@@ -86,47 +106,116 @@ class Board(object):
     num_tiles = 4
     tile_size = (board_size['w'] - ((num_tiles + 1) * gap_size)) / num_tiles
 
+    def __dbg_print(self):
+        for i in range(0, self.num_tiles, 1):
+            tmp = ""
+            for j in range(0, self.num_tiles, 1):
+                tmp += str(self._board[i][j].val) + " "
+            print tmp
+        print
+
+
     def __tile_pos(self, tile, x, y):
+        """Calculates the tiles corner coordinates based off its index in the 
+        board data structure"""
+
         pos_x = self.margins['w'] + (x * tile.sq_dim) + (self.gap_size * (x + 1))
         pos_y = self.margins['h'] + (y * tile.sq_dim) + (self.gap_size * (y + 1))
 
         return pos_x, pos_y
 
+    def _board_iter(direction):
+        """Given a direction this will yield indices for the row and
+        column on each iteration that correspond to iterating in that
+        direction.
+
+        For example, if we are iterating from the left, for each row
+        iterate the row list from left to right."""
+
+        """Go row by row, and for each row iterate from the left side"""
+        print K_LEFT, K_RIGHT, K_DOWN, K_UP
+        if direction == K_LEFT:
+            for row_i in range(0, self.num_tiles, 1):
+                for col_i in range(0, self.num_tiles, 1):
+                    yield row_i, col_i
+
+        # Go row by row, and for each row iterate from the right side
+        elif direction == K_RIGHT:
+            for row_i in range(0, self.num_tiles, 1):
+                for col_i in range(self.num_tiles-1, -1, -1):
+                    yield row_i, col_i
+
+        # Go column by column, and for each column start from the top
+        elif direction == K_UP:
+            for col_i in range(0, self.num_tiles, 1):
+                for row_i in range(0, self.num_tiles, 1):
+                    yield row_i, col_i
+
+        # Go column by column, and for each column start from the bottom
+        elif direction == K_DOWN:
+            for col_i in range(0, self.num_tiles, 1):
+                for row_i in range(self.num_tiles-1, -1, -1):
+                    yield row_i, col_i
+
+
+
     def _shift_tiles(self, direction):
+        """Given a specific direction, shift all the tiles in the data structure
+        to that side of the board"""
+
         if not direction:
             return
 
-        #TODO: Rotation directions are messed up
-        if direction in (K_UP, K_DOWN):
-            # rotates board to make iterating through columns easier
-            tmp_board = [list(row) for row in zip(*self._board)]
-        else:
-            tmp_board = self._board
+        """1. start with end of row/column in given direction and iterate
+           the opposite direction"""
 
-        # determine what side to insert removed empty tiles
-        if direction in (K_DOWN, K_RIGHT):
-            left = True 
-        else:
-            left = False
+        if direction == K_LEFT:
+            for row_i in range(0, self.num_tiles, 1):
+                # optimization: Keep track of last tile, don't need to search before that point
+                for col_i in range(0, self.num_tiles-1, 1):
+                    if self._board[row_i][col_i].val:
+                        continue
+                    for pos in range(col_i+1,self.num_tiles,1):
+                        if self._board[row_i][pos].val:
+                            tmp_tile = self._board[row_i][pos]
+                            self._board[row_i][pos] = self._board[row_i][col_i]
+                            self._board[row_i][col_i] = tmp_tile
+                            break
 
-        # build list of empty tiles so we can remove and shift
-        for i in range(len(tmp_board) - 1, -1, -1):
-            tmp_tiles = []
-            for j in range(len(tmp_board[i]) - 1, -1, -1):
-                if not tmp_board[i][j].val:
-                    tmp_tiles.append(tmp_board[i][j])
-                    del tmp_board[i][j]
-            if left:
-                tmp_board[i] = tmp_tiles + tmp_board[i]
-            else:
-                tmp_board[i] = tmp_board[i] + tmp_tiles
+        # Go row by row, and for each row iterate from the right side
+        elif direction == K_RIGHT:
+             for row_i in range(0, self.num_tiles, 1):
+                # optimization: Keep track of last tile, don't need to search before that point
+                for col_i in range(self.num_tiles-1, 0, -1):
+                    if self._board[row_i][col_i].val:
+                        continue
+                    for pos in range(col_i-1, -1, -1):
+                        if self._board[row_i][pos].val:
+                            tmp_tile = self._board[row_i][pos]
+                            self._board[row_i][pos] = self._board[row_i][col_i]
+                            self._board[row_i][col_i] = tmp_tile
+                            break
 
-        if direction in (K_UP, K_DOWN):
-            # rotates board to make iterating through columns easier
-            tmp_board = zip(*tmp_board)
-            tmp_board = [list(row) for row in zip(*tmp_board)]
-        
-        self._board = tmp_board
+        # Go column by column, and for each column start from the top
+        elif direction == K_UP:
+            for col_i in range(0, self.num_tiles, 1):
+                for row_i in range(0, self.num_tiles, 1):
+                    pass
+
+        # Go column by column, and for each column start from the bottom
+        elif direction == K_DOWN:
+            for col_i in range(0, self.num_tiles, 1):
+                for row_i in range(self.num_tiles-1, -1, -1):
+                    pass
+
+        """1.1 Find first empty space in row/column and note it
+           EXCEPTION: If no empty spaces, than there is nothing to
+           do"""
+
+        """1.2 Find first non-empty space and move to noted empty space
+           EXCEPTION: If no non-empty spaces, than there is nothing to do"""
+
+        """REPEAT steps 1.1 and 1.2 until one of the exceptions noted is met"""
 
     def _merge_tiles(self, direction):
         assert(direction in (K_UP, K_DOWN, K_LEFT, K_RIGHT))
@@ -150,20 +239,25 @@ class Board(object):
         if init:
             o_r1 = -1 
             o_r2 = -1
-            for i in range(0,2):
+            for i in range(0,5):
                 r1 = random.randint(0, size-1)
                 r2 = random.randint(0, size-1)
                 while r1 == o_r1 and r2 == o_r2:
                     r1 = random.randint(0, size-1)
                     r2 = random.randint(0, size-1)
-                self._board[r1][r2] = Tile(r1, r2, self.tile_size, 2)
+                self._board[r1][r2] = Tile(r1, r2, self.tile_size, random.choice([2,4,8,16,32]))
                 o_r1 = r1
                 o_r2 = r2
+
+        self.__dbg_print()
 
     def input(self, direction):
         self._shift_tiles(direction)
 
     def update(self, tiles):
+        """Takes a list of tiles and updates the board data structure 
+        with said tiles"""
+
         try:
             for tile in tiles:
                 self._board[tile.x][tile.y] = tile
@@ -172,10 +266,16 @@ class Board(object):
             self._board[tiles.x][tiles.y] = tiles
 
     def draw(self, screen):
+        """Draws the game board to the display"""
+
         pygame.draw.rect(screen, self.board_color, self.board_rect, 1)
-        for i in range(len(self._board)):
-            for j in range(len(self._board[i])):
-                tile = self._board[i][j]
+
+        # Need to transform array due to differences in data structure
+        # and screen coordinates
+        trans_board = zip(*self._board)
+        for i in range(len(trans_board)):
+            for j in range(len(trans_board[i])):
+                tile = trans_board[i][j]
                 pos_x, pos_y = self.__tile_pos(tile, i, j)
                 tile.draw(screen, pos_x, pos_y)
 
