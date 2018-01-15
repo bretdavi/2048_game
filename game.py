@@ -54,6 +54,16 @@ class Tile(object):
 
     sq_dim = 64
 
+    def __eq__(self, other):
+        if isinstance(self, other.__class__):
+            return self.val == other.val
+        return NotImplemented
+
+    def __ne__(self, other):
+        if isinstance(self, other.__class__):
+            return self.val != other.val
+        return NotImplemented
+
     def __init__(self, sq_dim=None, val=None):
         self.val = val
         self.txt = str(val) if val else ""
@@ -113,8 +123,23 @@ class Board(object):
             return
 
         if direction == K_LEFT:
+            # Merge any possible tiles
             for row_i in range(0, self.num_tiles, 1):
-                # optimization: Keep track of last tile, don't need to search before that point
+                for col_i in range(0, self.num_tiles-1, 1):
+                    if not self._board[row_i][col_i].val:
+                        continue
+
+                    for pos in range(col_i+1,self.num_tiles,1):
+                        if self._board[row_i][pos] == self._board[row_i][col_i]:
+                            self._board[row_i][pos] = Tile(self.tile_size, None)
+                            self._board[row_i][col_i] = Tile(self.tile_size, self._board[row_i][col_i].val*2)
+                            break
+                        # If tile didn't match and isn't any empty space stop checking
+                        elif self._board[row_i][pos].val != None:
+                            break
+
+            # Shift all tiles to the Left
+            for row_i in range(0, self.num_tiles, 1):
                 for col_i in range(0, self.num_tiles-1, 1):
                     if self._board[row_i][col_i].val:
                         continue
@@ -126,10 +151,26 @@ class Board(object):
                             self._board[row_i][col_i] = tmp_tile
                             break
 
+
         # Go row by row, and for each row iterate from the right side
         elif direction == K_RIGHT:
-             for row_i in range(0, self.num_tiles, 1):
-                # optimization: Keep track of last tile, don't need to search before that point
+            # Merge any possible tiles
+            for row_i in range(0, self.num_tiles, 1):
+                for col_i in range(self.num_tiles-1, 0, -1):
+                    if not self._board[row_i][col_i].val:
+                        continue
+
+                    for pos in range(col_i-1, -1, -1):
+                        if self._board[row_i][pos] == self._board[row_i][col_i]:
+                            self._board[row_i][pos] = Tile(self.tile_size, None)
+                            self._board[row_i][col_i] = Tile(self.tile_size, self._board[row_i][col_i].val*2)
+                            break
+                        # If tile didn't match and isn't any empty space stop checking
+                        elif self._board[row_i][pos].val != None:
+                            break
+
+            # Shift all tiles to Right
+            for row_i in range(0, self.num_tiles, 1):
                 for col_i in range(self.num_tiles-1, 0, -1):
                     if self._board[row_i][col_i].val:
                         continue
@@ -143,6 +184,22 @@ class Board(object):
 
         # Go column by column, and for each column start from the top
         elif direction == K_UP:
+            # Merge tiles
+            for col_i in range(0, self.num_tiles, 1):
+                for row_i in range(0, self.num_tiles-1, 1):
+                    if not self._board[row_i][col_i].val:
+                        continue
+
+                    for pos in range(row_i+1,self.num_tiles,1):
+                        if self._board[pos][col_i] == self._board[row_i][col_i]:
+                            self._board[pos][col_i] = Tile(self.tile_size, None)
+                            self._board[row_i][col_i] = Tile(self.tile_size, self._board[row_i][col_i].val*2)
+                            break
+                        # If tile didn't match and isn't any empty space stop checking
+                        elif self._board[pos][col_i].val != None:
+                            break
+
+            # Shift tiles up
             for col_i in range(0, self.num_tiles, 1):
                 for row_i in range(0, self.num_tiles-1, 1):
                     if self._board[row_i][col_i].val:
@@ -157,6 +214,21 @@ class Board(object):
 
         # Go column by column, and for each column start from the bottom
         elif direction == K_DOWN:
+            # Merge tiles
+            for col_i in range(0, self.num_tiles, 1):
+                for row_i in range(self.num_tiles-1, 0, -1):
+                    if not self._board[row_i][col_i].val:
+                        continue
+
+                    for pos in range(row_i-1, -1, -1):
+                        if self._board[pos][col_i] == self._board[row_i][col_i]:
+                            self._board[pos][col_i] = Tile(self.tile_size, None)
+                            self._board[row_i][col_i] = Tile(self.tile_size, self._board[row_i][col_i].val*2)
+                            break
+                        # If tile didn't match and isn't any empty space stop checking
+                        elif self._board[pos][col_i].val != None:
+                            break
+
             for col_i in range(0, self.num_tiles, 1):
                 for row_i in range(self.num_tiles-1, 0, -1):
                     if self._board[row_i][col_i].val:
