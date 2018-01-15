@@ -96,6 +96,8 @@ class Board(object):
     gap_size = 10
     num_tiles = 4
     tile_size = (board_size['w'] - ((num_tiles + 1) * gap_size)) / num_tiles
+    # Distribution of tiles for new tile creation
+    new_tiles = [2,2,2,2,2,2,4]
 
     def __dbg_print(self):
         for i in range(0, self.num_tiles, 1):
@@ -228,7 +230,7 @@ class Board(object):
                         # If tile didn't match and isn't any empty space stop checking
                         elif self._board[pos][col_i].val != None:
                             break
-
+            # Shift tiles down
             for col_i in range(0, self.num_tiles, 1):
                 for row_i in range(self.num_tiles-1, 0, -1):
                     if self._board[row_i][col_i].val:
@@ -240,14 +242,6 @@ class Board(object):
                             self._board[pos][col_i] = self._board[row_i][col_i]
                             self._board[row_i][col_i] = tmp_tile
                             break
-
-
-    def _merge_tiles(self, direction):
-        assert(direction in (K_UP, K_DOWN, K_LEFT, K_RIGHT))
-
-        if direction in (K_UP, K_DOWN):
-            for i in range(self._board):
-                pass
 
 
     def __init__(self, size, init=False):
@@ -262,22 +256,28 @@ class Board(object):
                 self._board[i][j] = Tile(self.tile_size)
 
         if init:
-            o_r1 = -1 
-            o_r2 = -1
-            for i in range(0,5):
-                r1 = random.randint(0, size-1)
-                r2 = random.randint(0, size-1)
-                while r1 == o_r1 and r2 == o_r2:
-                    r1 = random.randint(0, size-1)
-                    r2 = random.randint(0, size-1)
-                self._board[r1][r2] = Tile(self.tile_size, random.choice([2,4,8,16,32]))
-                o_r1 = r1
-                o_r2 = r2
+                self.add_rand_tile([2])
+                self.add_rand_tile([2])
 
         self.__dbg_print()
 
     def input(self, direction):
         self._shift_tiles(direction)
+
+    def add_rand_tile(self, val_list=None):
+        x = random.randint(0, self.size - 1)
+        y = random.randint(0, self.size - 1)
+        
+        if not val_list:
+            val_list = self.new_tiles
+
+        val = random.choice(val_list)
+
+        while self._board[x][y].val:
+            x = random.randint(0, self.size - 1)
+            y = random.randint(0, self.size - 1)
+
+        self._board[x][y] = Tile(self.tile_size, val)
 
     def update(self, tiles):
         """Takes a list of tiles and updates the board data structure 
