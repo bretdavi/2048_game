@@ -54,7 +54,7 @@ class Tile(object):
 
     sq_dim = 64
 
-    def __init__(self, x, y, sq_dim=None, val=None):
+    def __init__(self, sq_dim=None, val=None):
         self.val = val
         self.txt = str(val) if val else ""
         if sq_dim: self.sq_dim = sq_dim
@@ -187,7 +187,7 @@ class Board(object):
 
         for i in range(len(self._board)):
             for j in range(len(self._board[i])):
-                self._board[i][j] = Tile(i, j, self.tile_size)
+                self._board[i][j] = Tile(self.tile_size)
 
         if init:
             o_r1 = -1 
@@ -198,7 +198,7 @@ class Board(object):
                 while r1 == o_r1 and r2 == o_r2:
                     r1 = random.randint(0, size-1)
                     r2 = random.randint(0, size-1)
-                self._board[r1][r2] = Tile(r1, r2, self.tile_size, random.choice([2,4,8,16,32]))
+                self._board[r1][r2] = Tile(self.tile_size, random.choice([2,4,8,16,32]))
                 o_r1 = r1
                 o_r2 = r2
 
