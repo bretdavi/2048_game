@@ -19,7 +19,17 @@ FPS = 30
 clock = pygame.time.Clock()
 
 class Input(object):
-    
+    """Simple class to wrap the handling of user input.
+
+    Currently, check_input is the only method, which returns
+    K_LEFT, K_RIGHT, K_UP, or K_DOWN corresponding to the arrow
+    and wasd keys. It will also quit if the window is closed or
+    the escape key is pressed.
+
+    Since the only method is a classmethod, an object from this
+    class is never instantiated
+    """
+
     @classmethod
     def check_input(inp):
         for event in pygame.event.get():
@@ -37,9 +47,17 @@ class Input(object):
                     sys.exit()
 
 class Tile(object):
+    """This represents the numbered or blank tiles that appear
+    on the game board.
 
+    The Tile class tracks the font used by the tiles, the pixel
+    dimensions of the tiles, and the different tile background
+    colors.
+    """
+    
     pygame.font.init()
     tile_font = pygame.font.Font("Amatic-Bold.ttf", 48)
+    #                   R    G   B
     bg_tile_color =   (130, 119, 98)
     colors = { 2    : (165, 225, 229),
                4    : ( 94, 167, 178),
@@ -56,16 +74,40 @@ class Tile(object):
     sq_dim = 64
 
     def __eq__(self, other):
+        """Overrides equality operator (==) for the Tile class.
+
+        When comparing two tile objects, (e.g. Tile1 == Tile2)
+        this will compare the tile value, rather than the Object
+        reference
+        """
         if isinstance(self, other.__class__):
             return self.val == other.val
         return NotImplemented
 
     def __ne__(self, other):
+        """Overrides the inequality operator (!=) for the Tile class
+
+        inverse of the equality operator above
+        """
         if isinstance(self, other.__class__):
             return self.val != other.val
         return NotImplemented
 
     def __init__(self, sq_dim=None, val=None):
+        """A Tile object stores its graphical attributes and
+        data values
+
+        The tile has a numerical value, or None, which indicates a 
+        background tile. The color of the tile is based on the tile's
+        value.
+
+        Args:
+            sq_dim (int): number of pixels per tile side. If left blank
+                the class default value is used,
+            val    (int): The numerical value of the tile. If left blank,
+                the tile is set to None, making it a blank background tile
+        
+        """
         self.val = val
         self.txt = str(val) if val else ""
         if sq_dim: self.sq_dim = sq_dim
