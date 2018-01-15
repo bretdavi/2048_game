@@ -5,11 +5,12 @@
 __author__ = "Bret Davis"
 
 import sys
+import time
 import pygame
 from pygame.locals import *
 import random
-import numpy as np
 import pprint
+import copy
 
 
 SCREEN_SIZE = { 'w' : 640, 'h' : 480 }
@@ -94,15 +95,13 @@ class Board(object):
     margins = {'w' : (SCREEN_SIZE['w'] - board_size['w']) / 2,
                'h' : (SCREEN_SIZE['h'] - board_size['h']) / 2}
     gap_size = 10
-    num_tiles = 4
-    tile_size = (board_size['w'] - ((num_tiles + 1) * gap_size)) / num_tiles
     # Distribution of tiles for new tile creation
     new_tiles = [2,2,2,2,2,2,4]
 
     def __dbg_print(self):
-        for i in range(0, self.num_tiles, 1):
+        for i in range(0, self.size, 1):
             tmp = ""
-            for j in range(0, self.num_tiles, 1):
+            for j in range(0, self.size, 1):
                 tmp += str(self._board[i][j].val) + " "
             print tmp
         print
@@ -117,136 +116,152 @@ class Board(object):
 
         return pos_x, pos_y
 
-    def _shift_tiles(self, direction):
+
+    def _update_tiles(self, direction, board=None):
         """Given a specific direction, shift all the tiles in the data structure
         to that side of the board"""
 
+        # Set to true if the input changes the board state
+        updated = False
+        if not board:
+            board = self._board
+
         if not direction:
-            return
+            return updated
 
         if direction == K_LEFT:
             # Merge any possible tiles
-            for row_i in range(0, self.num_tiles, 1):
-                for col_i in range(0, self.num_tiles-1, 1):
-                    if not self._board[row_i][col_i].val:
+            for row_i in range(0, self.size, 1):
+                for col_i in range(0, self.size-1, 1):
+                    if not board[row_i][col_i].val:
                         continue
 
-                    for pos in range(col_i+1,self.num_tiles,1):
-                        if self._board[row_i][pos] == self._board[row_i][col_i]:
-                            self._board[row_i][pos] = Tile(self.tile_size, None)
-                            self._board[row_i][col_i] = Tile(self.tile_size, self._board[row_i][col_i].val*2)
+                    for pos in range(col_i+1,self.size,1):
+                        if board[row_i][pos] == board[row_i][col_i]:
+                            board[row_i][pos] = Tile(self.tile_size, None)
+                            board[row_i][col_i] = Tile(self.tile_size, board[row_i][col_i].val*2)
+                            updated = True
                             break
                         # If tile didn't match and isn't any empty space stop checking
-                        elif self._board[row_i][pos].val != None:
+                        elif board[row_i][pos].val != None:
                             break
 
             # Shift all tiles to the Left
-            for row_i in range(0, self.num_tiles, 1):
-                for col_i in range(0, self.num_tiles-1, 1):
-                    if self._board[row_i][col_i].val:
+            for row_i in range(0, self.size, 1):
+                for col_i in range(0, self.size-1, 1):
+                    if board[row_i][col_i].val:
                         continue
 
-                    for pos in range(col_i+1,self.num_tiles,1):
-                        if self._board[row_i][pos].val:
-                            tmp_tile = self._board[row_i][pos]
-                            self._board[row_i][pos] = self._board[row_i][col_i]
-                            self._board[row_i][col_i] = tmp_tile
+                    for pos in range(col_i+1,self.size,1):
+                        if board[row_i][pos].val:
+                            tmp_tile = board[row_i][pos]
+                            board[row_i][pos] = board[row_i][col_i]
+                            board[row_i][col_i] = tmp_tile
+                            updated = True
                             break
 
 
         # Go row by row, and for each row iterate from the right side
         elif direction == K_RIGHT:
             # Merge any possible tiles
-            for row_i in range(0, self.num_tiles, 1):
-                for col_i in range(self.num_tiles-1, 0, -1):
-                    if not self._board[row_i][col_i].val:
+            for row_i in range(0, self.size, 1):
+                for col_i in range(self.size-1, 0, -1):
+                    if not board[row_i][col_i].val:
                         continue
 
                     for pos in range(col_i-1, -1, -1):
-                        if self._board[row_i][pos] == self._board[row_i][col_i]:
-                            self._board[row_i][pos] = Tile(self.tile_size, None)
-                            self._board[row_i][col_i] = Tile(self.tile_size, self._board[row_i][col_i].val*2)
+                        if board[row_i][pos] == board[row_i][col_i]:
+                            board[row_i][pos] = Tile(self.tile_size, None)
+                            board[row_i][col_i] = Tile(self.tile_size, board[row_i][col_i].val*2)
+                            updated = True
                             break
                         # If tile didn't match and isn't any empty space stop checking
-                        elif self._board[row_i][pos].val != None:
+                        elif board[row_i][pos].val != None:
                             break
 
             # Shift all tiles to Right
-            for row_i in range(0, self.num_tiles, 1):
-                for col_i in range(self.num_tiles-1, 0, -1):
-                    if self._board[row_i][col_i].val:
+            for row_i in range(0, self.size, 1):
+                for col_i in range(self.size-1, 0, -1):
+                    if board[row_i][col_i].val:
                         continue
 
                     for pos in range(col_i-1, -1, -1):
-                        if self._board[row_i][pos].val:
-                            tmp_tile = self._board[row_i][pos]
-                            self._board[row_i][pos] = self._board[row_i][col_i]
-                            self._board[row_i][col_i] = tmp_tile
+                        if board[row_i][pos].val:
+                            tmp_tile = board[row_i][pos]
+                            board[row_i][pos] = board[row_i][col_i]
+                            board[row_i][col_i] = tmp_tile
+                            updated = True
                             break
 
         # Go column by column, and for each column start from the top
         elif direction == K_UP:
             # Merge tiles
-            for col_i in range(0, self.num_tiles, 1):
-                for row_i in range(0, self.num_tiles-1, 1):
-                    if not self._board[row_i][col_i].val:
+            for col_i in range(0, self.size, 1):
+                for row_i in range(0, self.size-1, 1):
+                    if not board[row_i][col_i].val:
                         continue
 
-                    for pos in range(row_i+1,self.num_tiles,1):
-                        if self._board[pos][col_i] == self._board[row_i][col_i]:
-                            self._board[pos][col_i] = Tile(self.tile_size, None)
-                            self._board[row_i][col_i] = Tile(self.tile_size, self._board[row_i][col_i].val*2)
+                    for pos in range(row_i+1,self.size,1):
+                        if board[pos][col_i] == board[row_i][col_i]:
+                            board[pos][col_i] = Tile(self.tile_size, None)
+                            board[row_i][col_i] = Tile(self.tile_size, board[row_i][col_i].val*2)
+                            updated = True
                             break
                         # If tile didn't match and isn't any empty space stop checking
-                        elif self._board[pos][col_i].val != None:
+                        elif board[pos][col_i].val != None:
                             break
 
             # Shift tiles up
-            for col_i in range(0, self.num_tiles, 1):
-                for row_i in range(0, self.num_tiles-1, 1):
-                    if self._board[row_i][col_i].val:
+            for col_i in range(0, self.size, 1):
+                for row_i in range(0, self.size-1, 1):
+                    if board[row_i][col_i].val:
                         continue
 
-                    for pos in range(row_i+1,self.num_tiles,1):
-                        if self._board[pos][col_i].val:
-                            tmp_tile = self._board[pos][col_i]
-                            self._board[pos][col_i] = self._board[row_i][col_i]
-                            self._board[row_i][col_i] = tmp_tile
+                    for pos in range(row_i+1,self.size,1):
+                        if board[pos][col_i].val:
+                            tmp_tile = board[pos][col_i]
+                            board[pos][col_i] = board[row_i][col_i]
+                            board[row_i][col_i] = tmp_tile
+                            updated = True
                             break
 
         # Go column by column, and for each column start from the bottom
         elif direction == K_DOWN:
             # Merge tiles
-            for col_i in range(0, self.num_tiles, 1):
-                for row_i in range(self.num_tiles-1, 0, -1):
-                    if not self._board[row_i][col_i].val:
+            for col_i in range(0, self.size, 1):
+                for row_i in range(self.size-1, 0, -1):
+                    if not board[row_i][col_i].val:
                         continue
 
                     for pos in range(row_i-1, -1, -1):
-                        if self._board[pos][col_i] == self._board[row_i][col_i]:
-                            self._board[pos][col_i] = Tile(self.tile_size, None)
-                            self._board[row_i][col_i] = Tile(self.tile_size, self._board[row_i][col_i].val*2)
+                        if board[pos][col_i] == board[row_i][col_i]:
+                            board[pos][col_i] = Tile(self.tile_size, None)
+                            board[row_i][col_i] = Tile(self.tile_size, board[row_i][col_i].val*2)
+                            updated = True
                             break
                         # If tile didn't match and isn't any empty space stop checking
-                        elif self._board[pos][col_i].val != None:
+                        elif board[pos][col_i].val != None:
                             break
             # Shift tiles down
-            for col_i in range(0, self.num_tiles, 1):
-                for row_i in range(self.num_tiles-1, 0, -1):
-                    if self._board[row_i][col_i].val:
+            for col_i in range(0, self.size, 1):
+                for row_i in range(self.size-1, 0, -1):
+                    if board[row_i][col_i].val:
                         continue
 
                     for pos in range(row_i-1, -1, -1):
-                        if self._board[pos][col_i].val:
-                            tmp_tile = self._board[pos][col_i]
-                            self._board[pos][col_i] = self._board[row_i][col_i]
-                            self._board[row_i][col_i] = tmp_tile
+                        if board[pos][col_i].val:
+                            tmp_tile = board[pos][col_i]
+                            board[pos][col_i] = board[row_i][col_i]
+                            board[row_i][col_i] = tmp_tile
+                            updated = True
                             break
+        return updated
 
 
     def __init__(self, size, init=False):
         self._board = [[None for x in range(size)] for y in range(size)]
         self.size = size
+        self.tile_size = (self.board_size['w'] - ((size + 1) * self.gap_size)) / size
         self.x = (SCREEN_SIZE['w'] - self.board_size['w']) / 2
         self.y = (SCREEN_SIZE['h'] - self.board_size['h']) / 2
         self.board_rect = pygame.Rect(self.x, self.y, self.board_size['w'], self.board_size['h'])
@@ -261,8 +276,49 @@ class Board(object):
 
         self.__dbg_print()
 
-    def input(self, direction):
-        self._shift_tiles(direction)
+    def update_game(self, direction, screen):
+        game_over = True
+        updated = self._update_tiles(direction)
+        won = self.check_for_win(screen)
+        lost = self.check_for_loss(screen)
+        if won or lost:
+            return game_over
+
+        if updated:
+            self.add_rand_tile()
+
+        return False
+
+    def _result_animation(self, screen, text):
+        pygame.font.init()
+        res_font = pygame.font.Font("Amatic-Bold.ttf", 128)
+        text_obj = res_font.render(text, True, (240,255,255))
+        res_rect = text_obj.get_rect()
+
+        text_x = SCREEN_SIZE['w'] / 2
+        text_y = SCREEN_SIZE['h'] / 2
+        res_rect.center = (text_x, text_y)
+
+        screen.blit(text_obj, res_rect)
+
+    def check_for_win(self, screen):
+        for x in range(0, self.size):
+            for y in range(0, self.size):
+                if self._board[x][y].val == 2048:
+                    self._result_animation(screen, "You Win!")
+                    return True
+        return False
+
+    def check_for_loss(self, screen):
+        test_board = copy.deepcopy(self._board)
+        loss = not self._update_tiles(K_LEFT, test_board)
+        loss &= not self._update_tiles(K_RIGHT, test_board)
+        loss &= not self._update_tiles(K_UP, test_board)
+        loss &= not self._update_tiles(K_DOWN, test_board)
+
+        if loss:
+            self._result_animation(screen, "You SUCK!")
+        return loss
 
     def add_rand_tile(self, val_list=None):
         x = random.randint(0, self.size - 1)
@@ -278,17 +334,6 @@ class Board(object):
             y = random.randint(0, self.size - 1)
 
         self._board[x][y] = Tile(self.tile_size, val)
-
-    def update(self, tiles):
-        """Takes a list of tiles and updates the board data structure 
-        with said tiles"""
-
-        try:
-            for tile in tiles:
-                self._board[tile.x][tile.y] = tile
-        # if tiles is a single value, just assign it directly
-        except TypeError:
-            self._board[tiles.x][tiles.y] = tiles
 
     def draw(self, screen):
         """Draws the game board to the display"""
@@ -316,8 +361,11 @@ def main():
     while True:
         board.draw(screen)
         direction = Input.check_input()
-        board.input(direction)
+        game_over = board.update_game(direction, screen)
         pygame.display.update()
+        if game_over:
+            while True:
+                Input.check_input()
         clock.tick(FPS)
 
 
